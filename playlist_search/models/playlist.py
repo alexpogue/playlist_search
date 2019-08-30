@@ -8,7 +8,7 @@ from marshmallow import fields
 class Playlist(db.Model):
     __tablename__ = 'playlist'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+    spotify_id = db.Column(db.String(22), nullable=False)
     tracks = db.relationship(
         "Track",
         secondary=track_identifier,
@@ -16,11 +16,11 @@ class Playlist(db.Model):
     )
 
     def __repr__(self):
-        return "<Playlist: '{}', tracks: {}>".format(self.name, self.tracks)
+        return "<Playlist: '{}' ({}), tracks: {}>".format(self.id, self.spotify_id, self.tracks)
 
 class PlaylistSchema(ma.Schema):
     id = fields.Integer()
-    name = fields.String()
+    spotify_id = fields.String()
     tracks = fields.Nested('TrackSchema', many=True, exclude=('playlists',))
 
 playlist_schema = PlaylistSchema()
