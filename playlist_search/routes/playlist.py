@@ -15,9 +15,6 @@ playlist_blueprint = Blueprint('playlists', __name__)
 def get_playlists():
     playlist = Playlist.query.first()
     result, errors = playlist_schema.dump(playlist)
-    #result_without_errors = result[0]
-    #keyed_result = {"playlists": result_without_errors}
-    #keyed_result = {"playlists": result}
 
     return jsonify(result)
     
