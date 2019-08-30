@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="#" id="spotify_url_form" onsubmit="submitNewBetEventForm();return false">
+Spotify song URL: <input type="text" id="spotify_url_textbox"></input>
+<input type="submit">
+</form>
+<p>
+<span id="rawResults"></span>
+<div id="results">
+<span id="errorLabel"></span><br /><br />
+Name: <span id="songName"></span><br />
+Artist: <span id="songArtist"></span><br />
+Album: <span id="songAlbum"></span><br /><br />
+Playlists:<br />
+<ul id="playlistList">
+</ul>
+</div>
+</p>
+<script>
+function getSpotifyIdFromUrl(urlInput) {
+    var urlCopy = (' ' + urlInput).slice(1); // https://stackoverflow.com/a/31733628/3846218
+
+    // if slash is last char, chop it off
+    var lastSlash = urlCopy.lastIndexOf("/");
+    if (lastSlash == urlCopy.length - 1) {
+        urlCopy = urlCopy.substr(0, urlCopy.length - 1);
+    }
+
+    lastSlash = urlCopy.lastIndexOf("/");
+    idStart = lastSlash + 1
+    newLength = urlCopy.length - idStart;
+
+    spotifyId = urlCopy.substr(idStart, newLength);
+
+    return spotifyId;
+}
+
+function submitNewBetEventForm() {
+    var spotifyUrl = $("#spotify_url_textbox").val();
+    var spotifyId = getSpotifyIdFromUrl(spotifyUrl);
+    console.log('spotifyId = ' + spotifyId)
+
+    $.get("/track/?spotify_id="+spotifyId, {}, 
+        function(track) {
+            $('#errorLabel').text('');
+            $('#playlistList').text('');
+            $('#songName').text('');
+            $('#songArtist').text('');
+            $('#songAlbum').text('');
+
+            if ($.isEmptyObject(track)) {
+                $('#errorLabel').text('Error: Track not found in database (does not exist in any playlists)');
+                return;
+            }
+
+            $('#songName').text(track.name);
+            $('#songArtist').text(track.artist);
+            $('#songAlbum').text(track.album);
+
+            $.each(track.playlists, function(index, element) {
+                $('#playlistList').append($('<li>', {
+                    text: element.name
+                }));
+            });
+
+            console.log(track);
+        });
+}
+</script>
+{% endblock %}
