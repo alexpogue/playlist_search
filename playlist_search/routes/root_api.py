@@ -1,10 +1,7 @@
 import json
 
 from flask import Blueprint, request, abort, jsonify, render_template
-from ..models.goal import Goal
 from ..models.base import db
-
-from ..models.goal import goal_schema, goals_schema
 
 from flask_marshmallow import pprint
 

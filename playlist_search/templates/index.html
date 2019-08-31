@@ -9,7 +9,7 @@ Spotify song URL: <input type="text" id="spotify_url_textbox"></input>
 <div id="results">
 <span id="errorLabel"></span><br /><br />
 Name: <span id="songName"></span><br />
-Artist: <span id="songArtist"></span><br />
+Artist: <span id="songArtists"></span><br />
 Album: <span id="songAlbum"></span><br /><br />
 Playlists:<br />
 <ul id="playlistList">
@@ -45,7 +45,7 @@ function submitNewBetEventForm() {
             $('#errorLabel').text('');
             $('#playlistList').text('');
             $('#songName').text('');
-            $('#songArtist').text('');
+            $('#songArtists').text('');
             $('#songAlbum').text('');
 
             if ($.isEmptyObject(track)) {
@@ -54,8 +54,9 @@ function submitNewBetEventForm() {
             }
 
             $('#songName').text(track.name);
-            $('#songArtist').text(track.artist);
-            $('#songAlbum').text(track.album);
+            var artistNames = $.map(track.artists, function(artist) { return artist["name"] });
+            $('#songArtists').text(artistNames.join(', '))
+            $('#songAlbum').text(track.album["name"]);
 
             $.each(track.playlists, function(index, element) {
                 $('#playlistList').append($('<li>', {

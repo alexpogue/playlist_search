@@ -2,6 +2,7 @@ from .base import db
 from .base import ma
 
 from .track_identifier import track_identifier
+from .album_identifier import album_identifier
 
 from marshmallow import fields
 
@@ -12,6 +13,11 @@ class Playlist(db.Model):
     tracks = db.relationship(
         "Track",
         secondary=track_identifier,
+        back_populates="playlists"
+    )
+    albums = db.relationship(
+        "Album",
+        secondary=album_identifier,
         back_populates="playlists"
     )
 

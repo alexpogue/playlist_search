@@ -3,6 +3,7 @@ from .base import ma
 
 from .playlist import Playlist
 from .track import Track
+from .album import Album
 
 def init_app(app):
     ma.init_app(app)

@@ -1,5 +1,4 @@
 from flask import Flask
-from .api import api
 
 from .util import generate_config_file_from_heroku_env
 import os
