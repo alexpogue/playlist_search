@@ -53,10 +53,9 @@ def get_user_playlists(user_id, spotify, fields=None, test_mode=False):
         print('i  = {}'.format(i ))
         user_playlists = spotify.user_playlists(user_id, limit=PLAYLISTS_API_LIMIT, offset=i)
 
-        if playlist_storer_func is not None:
-            for playlist in user_playlists['items']:
-                playlist_spotify_id = playlist['id']
-                store_playlist_and_subobjects_to_db(user_id, playlist_spotify_id, spotify, track_id_map, album_id_map)
+        for playlist in user_playlists['items']:
+            playlist_spotify_id = playlist['id']
+            store_playlist_and_subobjects_to_db(user_id, playlist_spotify_id, spotify, track_id_map, album_id_map)
 #        playlists.extend(user_playlists['items'])
         i += PLAYLISTS_API_LIMIT
 
@@ -64,7 +63,7 @@ def get_user_playlists(user_id, spotify, fields=None, test_mode=False):
 
 def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify, track_id_map, album_id_map):
     playlist = Playlist(spotify_id=playlist_spotify_id)
-    add_tracks_and_albums_to_playlist(user_spotify_id, playlist, spotify, track_id_map, album_id_map)
+    add_tracks_to_playlist(user_spotify_id, playlist, spotify, track_id_map, album_id_map)
     db.session.add(playlist)
     db.session.commit()
 
@@ -74,7 +73,7 @@ def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, sp
     for track in playlist.tracks:
         track_id_map[track.spotify_id] = track.id
 
-def add_tracks_and_albums_to_playlist(user_id, playlist, spotify, track_id_map, album_id_map):
+def add_tracks_to_playlist(user_id, playlist, spotify, track_id_map, album_id_map):
     fields = 'items(track(id,album.id,artists)),next'
     api_tracks = get_user_playlist_tracks(user_id, playlist.spotify_id, fields, spotify)
 
@@ -94,14 +93,14 @@ def add_tracks_and_albums_to_playlist(user_id, playlist, spotify, track_id_map, 
         else:
             track = Track(spotify_id=api_track_spotify_id)
 
-        playlist.tracks.append(track)
-
         api_album = api_track.get('track', {}).get('album')
 
         if api_album is not None:
             api_album_spotify_id = api_album.get('id')
             album = Album(spotify_id=api_album_spotify_id)
-            playlist.albums.append(album)
+            track.album = album
+
+        playlist.tracks.append(track)
 
 def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
     PLAYLIST_TRACKS_API_LIMIT=100

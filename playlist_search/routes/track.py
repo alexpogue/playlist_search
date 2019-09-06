@@ -31,8 +31,11 @@ def get_track_by_spotify_id():
         api_playlists = lookup_playlists(playlist_spotify_ids_from_db)
         track['playlists'] = api_playlists['playlists']
 
-    #result = track_schema.dump(track)
-    #return jsonify(result)
+        album_from_db = track_from_db.album
+        #api_album = lookup_album(album_from_db.spotify_id)
+
+        #print('album = {}'.format(album))
+
     return track
 
 @track_blueprint.route('/<int:track_id>', methods=['GET'])

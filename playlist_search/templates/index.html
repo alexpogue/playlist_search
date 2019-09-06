@@ -21,9 +21,9 @@ Playlists:<br />
 function removeTrailingSlashIfExists(url) {
     var lastSlash = url.lastIndexOf("/");
     if (lastSlash == url.length - 1) {
-        newUrl = url.substr(0, url.length - 1);
+        url = url.substr(0, url.length - 1);
     }
-    return newUrl
+    return url
 }
 
 function getSpotifyIdFromUrl(urlInput) {
@@ -64,32 +64,62 @@ function submitNewBetEventForm() {
     console.log('spotifyId = ' + spotifyId)
     console.log('spotifyType = ' + spotifyType)
 
-    $.get("/track/?spotify_id="+spotifyId, {}, 
-        function(track) {
-            $('#errorLabel').text('');
-            $('#playlistList').text('');
-            $('#songName').text('');
-            $('#songArtists').text('');
-            $('#songAlbum').text('');
+    if (spotifyType == 'track') {
+        $.get("/track/?spotify_id="+spotifyId, {},
+            function(track) {
+                $('#errorLabel').text('');
+                $('#playlistList').text('');
+                $('#songName').text('');
+                $('#songArtists').text('');
+                $('#songAlbum').text('');
 
-            if ($.isEmptyObject(track)) {
-                $('#errorLabel').text('Error: Track not found in database (does not exist in any playlists)');
-                return;
-            }
+                if ($.isEmptyObject(track)) {
+                    $('#errorLabel').text('Error: Track not found in database (does not exist in any playlists)');
+                    return;
+                }
 
-            $('#songName').text(track.name);
-            var artistNames = $.map(track.artists, function(artist) { return artist["name"] });
-            $('#songArtists').text(artistNames.join(', '))
-            $('#songAlbum').text(track.album["name"]);
+                $('#songName').text(track.name);
+                var artistNames = $.map(track.artists, function(artist) { return artist["name"] });
+                $('#songArtists').text(artistNames.join(', '))
+                $('#songAlbum').text(track.album["name"]);
 
-            $.each(track.playlists, function(index, element) {
-                $('#playlistList').append($('<li>', {
-                    text: element.name
-                }));
+                $.each(track.playlists, function(index, element) {
+                    $('#playlistList').append($('<li>', {
+                        text: element.name
+                    }));
+                });
+
+                console.log(track);
             });
+    } else if (spotifyType == 'album') {
+        $.get("/album/?spotify_id="+spotifyId, {},
+            function(album) {
+                $('#errorLabel').text('');
+                $('#playlistList').text('');
+                $('#songName').text('');
+                $('#songArtists').text('');
+                $('#songAlbum').text('');
 
-            console.log(track);
-        });
+                if ($.isEmptyObject(album)) {
+                    $('#errorLabel').text('Error: Album not found in database (none of its tracks are in the playlists we stored)');
+                    return;
+
+
+                //$('#songName').text(album.name);
+                var artistNames = $.map(album.artists, function(artist) { return artist["name"] });
+                $('#songArtists').text(artistNames.join(', '))
+                $('#songAlbum').text(album["name"]);
+
+                //$.each(album.playlists, function(index, element) {
+                //    $('#playlistList').append($('<li>', {
+                //        text: element.name
+                //    }));
+                //});
+
+                console.log(album);
+            });
+    }
+
 }
 </script>
 {% endblock %}

@@ -15,11 +15,6 @@ class Playlist(db.Model):
         secondary=track_identifier,
         back_populates="playlists"
     )
-    albums = db.relationship(
-        "Album",
-        secondary=album_identifier,
-        back_populates="playlists"
-    )
 
     def __repr__(self):
         return "<Playlist: '{}' ({}), tracks: {}>".format(self.id, self.spotify_id, self.tracks)

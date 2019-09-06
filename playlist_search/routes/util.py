@@ -17,8 +17,6 @@ def get_by_id(model_cls, lookup_id, schema):
         abort(404)
     result = schema.dump(model_obj)
 
-    #table_name = model_cls.__table__.name
-    #keyed_result = {table_name: result}
     return result
 
 def lookup_track(track_spotify_id, fields=None):
@@ -46,12 +44,25 @@ def lookup_tracks(track_spotify_ids, fields=None):
 
 def lookup_playlists(playlist_spotify_ids, fields=None):
     spotify = init_spotipy()
+
+    str_fields = None
+    if fields is not None:
+        str_fields = ','.join(fields)
+
     playlists = []
     for playlist_spotify_id in playlist_spotify_ids:
-        api_playlist = spotify.playlist(playlist_spotify_id)
+        api_playlist = spotify.playlist(playlist_spotify_id, fields=str_fields)
         playlists.append(api_playlist)
 
     return {'playlists': playlists}
+
+
+def lookup_album(album_spotify_id, fields=None):
+    spotify = init_spotipy()
+    album = spotify.album(album_spotify_id)
+    if fields is not None:
+        album = filter_album_by_fields(album, fields)
+    return album
 
 def filter_tracks_by_fields(tracks, fields):
     if fields is None:
@@ -63,3 +74,7 @@ def filter_track_by_fields(track, fields):
         return track
     return { field: track[field] for field in fields }
 
+def filter_album_by_fields(album, fields):
+    if fields is None:
+        return album
+    return { field: album[field] for field in fields }

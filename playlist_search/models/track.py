@@ -14,11 +14,14 @@ class Track(db.Model):
         secondary=track_identifier,
         back_populates="tracks"
     )
+    album_id = db.Column(db.Integer, db.ForeignKey('album.id'))
+    album = db.relationship("Album", back_populates="tracks")
 
 class TrackSchema(ma.Schema):
     id = fields.Integer()
     spotify_id = fields.String()
     playlists = fields.Nested('PlaylistSchema', many=True, exclude=('tracks',))
+    album = fields.Nested('AlbumSchema', exclude=('tracks',))
 
 track_schema = TrackSchema()
 tracks_schema = TrackSchema(many=True)
