@@ -83,15 +83,21 @@ function submitNewBetEventForm() {
                 $('#songArtists').text(artistNames.join(', '))
                 $('#songAlbum').text(track.album["name"]);
 
-                $.each(track.playlists, function(index, element) {
+                $.each(track.playlists, function(index, playlist) {
+                    console.log(playlist);
+                    var playlistUrl = playlist.external_urls["spotify"];
+                    var trackRankInPlaylist = playlist.track_rank
+                    var trackAddedAt = playlist.added_at
+                    var playlistLink = "<a href=\"" + playlistUrl + "\">" + playlist.name + "</a>";
+                    var internalList = '<ul><li>Current position: ' + trackRankInPlaylist + '</li><li>Added at: ' + trackAddedAt + '</li></ul>'
                     $('#playlistList').append($('<li>', {
-                        text: element.name
-                    }));
+                        html: playlistLink
+                    })).append(internalList);
                 });
 
                 console.log(track);
             });
-    } else if (spotifyType == 'album') {
+    } else if (spotifyType == "album") {
         $.get("/album/?spotify_id="+spotifyId, {},
             function(album) {
                 $('#errorLabel').text('');
@@ -103,11 +109,12 @@ function submitNewBetEventForm() {
                 if ($.isEmptyObject(album)) {
                     $('#errorLabel').text('Error: Album not found in database (none of its tracks are in the playlists we stored)');
                     return;
+                }
 
 
                 //$('#songName').text(album.name);
                 var artistNames = $.map(album.artists, function(artist) { return artist["name"] });
-                $('#songArtists').text(artistNames.join(', '))
+                $('#songArtists').text(artistNames.join(", "))
                 $('#songAlbum').text(album["name"]);
 
                 //$.each(album.playlists, function(index, element) {
@@ -117,9 +124,8 @@ function submitNewBetEventForm() {
                 //});
 
                 console.log(album);
-            });
+        });
     }
-
 }
 </script>
 {% endblock %}

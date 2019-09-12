@@ -1,3 +1,4 @@
+import json
 from flask import abort, jsonify
 from flask import current_app as app
 
@@ -55,6 +56,40 @@ def lookup_playlists(playlist_spotify_ids, fields=None):
         playlists.append(api_playlist)
 
     return {'playlists': playlists}
+
+def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
+    api_tracks = lookup_tracks_from_playlist(playlist_spotify_id, ['items.track.id', 'items.added_at'])
+
+    rank = -1
+    added_at = 'not found'
+    for index, track in enumerate(api_tracks):
+        if track['track']['id'] == track_spotify_id:
+            rank = index + 1
+            added_at = track['added_at']
+            break
+
+    return {'track_rank': rank, 'added_at': added_at}
+
+def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
+    if fields is not None:
+        fields.append('next') # needed for paging
+    spotipy = init_spotipy()
+
+    str_fields = None
+    if fields is not None:
+        str_fields = ','.join(fields)
+
+    TRACKS_API_LIMIT = 100 # set limit to maximum
+
+    api_tracks = spotipy.playlist_tracks(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT)
+    for api_track in api_tracks['items']:
+        yield api_track
+
+    i = TRACKS_API_LIMIT
+    while api_tracks.get('next') is not None:
+        api_tracks = spotipy.playlist_tracks(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT, offset=i)
+        for api_track in api_tracks['items']:
+            yield api_track
 
 
 def lookup_album(album_spotify_id, fields=None):
