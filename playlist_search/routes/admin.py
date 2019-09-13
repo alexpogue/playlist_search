@@ -26,7 +26,10 @@ def reset_db():
     db.drop_all()
     db.create_all()
 
-    get_user_playlists(user_spotify_id, spotify, test_mode=False)
+    api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
+    for api_playlist in api_playlists:
+        playlist_spotify_id = api_playlist['id']
+        store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
 
     playlists = Playlist.query.all()
 
@@ -35,45 +38,25 @@ def reset_db():
     return_val = {'result': playlists}
     return jsonify(result)
 
-def get_user_playlists(user_id, spotify, fields=None, test_mode=False):
+def get_user_playlists(user_id, spotify, test_mode=False):
     PLAYLISTS_API_LIMIT = 50 # set limit to maximum
 
-#    playlists = []
-    track_id_map = {}
-    album_id_map = {}
-
-    user_playlists = spotify.user_playlists(user_id, limit=PLAYLISTS_API_LIMIT)
-#    playlists.extend(user_playlists['items'])
-    for playlist in user_playlists['items']:
-        playlist_spotify_id = playlist['id']
-        store_playlist_and_subobjects_to_db(user_id, playlist_spotify_id, spotify, track_id_map, album_id_map)
-
-    i = PLAYLISTS_API_LIMIT
-    while user_playlists.get('next') is not None and test_mode == False:
-        print('i  = {}'.format(i ))
+    i = 0
+    user_playlists = {'next':'blah'} # just something to fulfill the first condition
+    while user_playlists.get('next') is not None:
         user_playlists = spotify.user_playlists(user_id, limit=PLAYLISTS_API_LIMIT, offset=i)
 
         for playlist in user_playlists['items']:
-            playlist_spotify_id = playlist['id']
-            store_playlist_and_subobjects_to_db(user_id, playlist_spotify_id, spotify, track_id_map, album_id_map)
-#        playlists.extend(user_playlists['items'])
+            yield playlist
+
         i += PLAYLISTS_API_LIMIT
 
-#    return {'items': playlists}
-
-def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify, track_id_map, album_id_map):
+def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify):
     playlist = Playlist(spotify_id=playlist_spotify_id)
-    add_tracks_to_playlist(user_spotify_id, playlist, spotify, track_id_map, album_id_map)
-    db.session.add(playlist)
+    add_tracks_to_playlist(user_spotify_id, playlist, spotify)
     db.session.commit()
 
-    # TODO: This is too late to be adding tracks to the track_id_map... What if a track is in a playlist twice?
-    # Even if this doesn't happen, surely there could be one album listed twice in a single playlist, and we'll
-    # have to do similar thing for albums... How can we get the id before the db.commit?? hmmm.
-    for track in playlist.tracks:
-        track_id_map[track.spotify_id] = track.id
-
-def add_tracks_to_playlist(user_id, playlist, spotify, track_id_map, album_id_map):
+def add_tracks_to_playlist(user_id, playlist, spotify):
     fields = 'items(track(id,album.id,artists)),next'
     api_tracks = get_user_playlist_tracks(user_id, playlist.spotify_id, fields, spotify)
 
@@ -87,10 +70,8 @@ def add_tracks_to_playlist(user_id, playlist, spotify, track_id_map, album_id_ma
 
         api_track_spotify_id = api_track_track.get('id')
 
-        track_db_id = track_id_map.get(api_track_spotify_id)
-        if track_db_id is not None:
-            track = Track.query.get(track_db_id)
-        else:
+        track = Track.query.filter_by(spotify_id=api_track_spotify_id).one_or_none()
+        if track is None:
             track = Track(spotify_id=api_track_spotify_id)
 
         api_album = api_track.get('track', {}).get('album')
@@ -100,15 +81,18 @@ def add_tracks_to_playlist(user_id, playlist, spotify, track_id_map, album_id_ma
             album = Album(spotify_id=api_album_spotify_id)
             track.album = album
 
-        playlist.tracks.append(track)
+        track.playlists.append(playlist)
+        db.session.add(track)
+        # flush here so that when we query within this loop, we get the tracks
+        # that haven't been committed. E.g. a song in a playlist twice
+        db.session.flush()
 
 def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
     PLAYLIST_TRACKS_API_LIMIT=100
     tracks = []
-    api_tracks = spotify.user_playlist_tracks(user_id, playlist_id, fields=fields, limit=PLAYLIST_TRACKS_API_LIMIT)
-    tracks.extend(api_tracks['items'])
 
-    i = PLAYLIST_TRACKS_API_LIMIT
+    i = 0
+    api_tracks = {'next': 'blah'} # just something to fulfill the first condition
     while api_tracks.get('next') is not None:
         print('track_i = {}'.format(i))
         api_tracks = spotify.user_playlist_tracks(user_id, playlist_id, fields=fields, limit=PLAYLIST_TRACKS_API_LIMIT, offset=i)

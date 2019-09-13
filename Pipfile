@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 flask = "*"
 flask-sqlalchemy = "*"
-flask-marshmallow = "*"
+marshmallow-sqlalchemy = "*"
 spotipy = {editable = true, git = "https://github.com/alexpogue/spotipy.git"}
 gunicorn = "*"
 psycopg2 = "*"

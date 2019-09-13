@@ -9,7 +9,7 @@ from marshmallow import fields
 class Playlist(db.Model):
     __tablename__ = 'playlist'
     id = db.Column(db.Integer, primary_key=True)
-    spotify_id = db.Column(db.String(22), nullable=False)
+    spotify_id = db.Column(db.String(22), index=True, nullable=False)
     tracks = db.relationship(
         "Track",
         secondary=track_identifier,
