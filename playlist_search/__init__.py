@@ -10,6 +10,7 @@ def create_app():
     from . import models, routes
     app = Flask(__name__)
     app.config.from_pyfile('../config.py')
+
     models.init_app(app)
     routes.init_app(app)
     return app

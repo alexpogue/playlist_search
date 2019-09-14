@@ -63,7 +63,8 @@ def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
     rank = -1
     added_at = 'not found'
     for index, track in enumerate(api_tracks):
-        if track['track']['id'] == track_spotify_id:
+        track_track = track.get('track')
+        if track_track is not None and track_track['id'] == track_spotify_id:
             rank = index + 1
             added_at = track['added_at']
             break

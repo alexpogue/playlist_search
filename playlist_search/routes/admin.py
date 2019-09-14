@@ -16,19 +16,31 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 admin_blueprint = Blueprint('admin', __name__)
 
+@admin_blueprint.route('/count_playlists', methods=['GET'])
+def count_playlists():
+    return str(Playlist.query.count())
+
+@admin_blueprint.route('/drop_db', methods=['GET'])
+def drop_db():
+    db.drop_all()
+
 @admin_blueprint.route('/reset_db', methods=['GET'])
 def reset_db():
     spotify = init_spotipy()
 
     user_spotify_id = 'particledetector'
 
-    # completely reset
-    db.drop_all()
     db.create_all()
 
     api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
     for api_playlist in api_playlists:
         playlist_spotify_id = api_playlist['id']
+
+        playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
+        if playlist is not None:
+            print('found playlist already in database - skipping: {}'.format(playlist_spotify_id))
+            continue
+
         store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
 
     playlists = Playlist.query.all()
@@ -70,7 +82,7 @@ def add_tracks_to_playlist(user_id, playlist, spotify):
 
         api_track_spotify_id = api_track_track.get('id')
 
-        track = Track.query.filter_by(spotify_id=api_track_spotify_id).one_or_none()
+        track = Track.query.filter_by(spotify_id=api_track_spotify_id).first()
         if track is None:
             track = Track(spotify_id=api_track_spotify_id)
 
@@ -91,10 +103,11 @@ def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
     PLAYLIST_TRACKS_API_LIMIT=100
     tracks = []
 
+    print('processing playlist {}'.format(playlist_id))
+
     i = 0
     api_tracks = {'next': 'blah'} # just something to fulfill the first condition
     while api_tracks.get('next') is not None:
-        print('track_i = {}'.format(i))
         api_tracks = spotify.user_playlist_tracks(user_id, playlist_id, fields=fields, limit=PLAYLIST_TRACKS_API_LIMIT, offset=i)
         tracks.extend(api_tracks['items'])
         i += PLAYLIST_TRACKS_API_LIMIT
