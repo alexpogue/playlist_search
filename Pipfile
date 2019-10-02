@@ -7,6 +7,7 @@ name = "pypi"
 flask = "*"
 flask-sqlalchemy = "*"
 flask-marshmallow = "*"
+flask-migrate = "*"
 spotipy = {editable = true, git = "https://github.com/alexpogue/spotipy.git"}
 gunicorn = "*"
 psycopg2 = "*"

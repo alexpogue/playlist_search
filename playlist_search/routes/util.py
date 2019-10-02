@@ -57,18 +57,33 @@ def lookup_playlists(playlist_spotify_ids, fields=None):
 
     return {'playlists': playlists}
 
+def lookup_playlist(playlist_spotify_id, fields=None):
+    spotify = init_spotipy()
+
+    str_fields = None
+    if fields is not None:
+        str_fields = ','.join(fields)
+
+    api_playlist = spotify.playlist(playlist_spotify_id, fields=str_fields)
+    return api_playlist
+
 def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
+    print('getting tracks from playlist')
     api_tracks = lookup_tracks_from_playlist(playlist_spotify_id, ['items.track.id', 'items.added_at'])
+    print('got tracks from playlist')
 
     rank = -1
     added_at = 'not found'
     for index, track in enumerate(api_tracks):
         track_track = track.get('track')
+        print('looking at track {}'.format(track_track['id']))
         if track_track is not None and track_track['id'] == track_spotify_id:
+            print('match')
             rank = index + 1
             added_at = track['added_at']
             break
 
+    print('returning')
     return {'track_rank': rank, 'added_at': added_at}
 
 def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
@@ -82,6 +97,10 @@ def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
 
     TRACKS_API_LIMIT = 100 # set limit to maximum
 
+    # TODO: I think there is some error here that makes it continue yielding into infinity for playlist 1MgizgTkP3tKN0qCwQRZTN searching for track 6WykLJ5yFXXcqhahrlonLY
+    #       ... Maybe this function yields to infinity on all playlists, but we find a matching track in a playlist first so we break early from get_track_in_playlist_details.
+
+    # TODO: clean up the duplicated code - use similar strategy as admin.get_user_playlist_tracks
     api_tracks = spotipy.playlist_tracks(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT)
     for api_track in api_tracks['items']:
         yield api_track

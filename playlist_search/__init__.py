@@ -10,6 +10,7 @@ def create_app():
     from . import models, routes
     app = Flask(__name__)
     app.config.from_pyfile('../config.py')
+    print('db uri = {}'.format(app.config['SQLALCHEMY_DATABASE_URI']))
 
     models.init_app(app)
     routes.init_app(app)

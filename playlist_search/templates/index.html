@@ -18,49 +18,75 @@ Playlists:<br />
 </p>
 <script>
 
-function removeTrailingSlashIfExists(url) {
-    var lastSlash = url.lastIndexOf("/");
+function removeTrailingCharIfExists(url, theChar) {
+    var lastSlash = url.lastIndexOf(theChar);
     if (lastSlash == url.length - 1) {
         url = url.substr(0, url.length - 1);
     }
     return url
 }
 
-function getSpotifyIdFromUrl(urlInput) {
-    var urlCopy = (' ' + urlInput).slice(1); // https://stackoverflow.com/a/31733628/3846218
-
-    urlCopy = removeTrailingSlashIfExists(urlCopy);
-
-    var lastSlash = urlCopy.lastIndexOf("/");
-
-    var idStart = lastSlash + 1;
-    var idLength = urlCopy.length - idStart;
-
-    spotifyId = urlCopy.substr(idStart, idLength);
-
-    return spotifyId;
+function getNthLastSegment(input, separatorChar, indexFromEnd) {
+    var inputCopy = (' ' + input).slice(1); // https://stackoverflow.com/a/31733628/3846218
+    inputCopy = removeTrailingCharIfExists(inputCopy, separatorChar);
+    var arr = inputCopy.split(separatorChar);
+    var index = arr.length - 1 - indexFromEnd;
+    return arr[index];
 }
 
-function getSpotifyTypeFromUrl(urlInput) {
-    var urlCopy = (' ' + urlInput).slice(1); // https://stackoverflow.com/a/31733628/3846218
+function getSpotifyIdFromLink(urlInput) {
+    var parser = document.createElement('a');
+    parser.href = urlInput;
+    pathname = parser.pathname;
+    return getNthLastSegment(pathname, '/', 0);
+}
 
-    urlCopy = removeTrailingSlashIfExists(urlCopy);
+function getSpotifyTypeFromLink(urlInput) {
+    var parser = document.createElement('a');
+    parser.href = urlInput;
+    pathname = parser.pathname;
 
-    var lastSlash = urlCopy.lastIndexOf("/");
-    var secondToLastSlash = urlCopy.lastIndexOf("/", lastSlash - 1);
+    return getNthLastSegment(pathname, '/', 1);
+}
 
-    var typeStart = secondToLastSlash + 1;
-    var typeLength = lastSlash - typeStart;
+function getSpotifyIdFromUri(uriInput) {
+    return getNthLastSegment(uriInput, ':', 0);
+}
 
-    var spotifyType = urlCopy.substr(typeStart, typeLength);
+function getSpotifyTypeFromUri(uriInput) {
+    return getNthLastSegment(uriInput, ':', 1);
+}
 
-    return spotifyType
+function getSpotifyQueryType(query) {
+    firstFourChars = query.substring(0, 4)
+    if (firstFourChars === "http") {
+        return "link";
+    }
+    if (firstFourChars === "spot") {
+        return "uri";
+    }
 }
 
 function submitNewBetEventForm() {
-    var spotifyUrl = $("#spotify_url_textbox").val();
-    var spotifyId = getSpotifyIdFromUrl(spotifyUrl);
-    var spotifyType = getSpotifyTypeFromUrl(spotifyUrl);
+    var spotifyQuery = $("#spotify_url_textbox").val();
+    var queryType = getSpotifyQueryType(spotifyQuery);
+    console.log("type = " + queryType);
+
+    var spotifyId = null;
+    var spotifyType = null;
+
+    if (queryType === "link") {
+        spotifyId = getSpotifyIdFromLink(spotifyQuery);
+        spotifyType = getSpotifyTypeFromLink(spotifyQuery);
+    }
+    else if (queryType === "uri") {
+        spotifyId = getSpotifyIdFromUri(spotifyQuery);
+        spotifyType = getSpotifyTypeFromUri(spotifyQuery);
+    }
+    else {
+        console.log("can't handle spotify type " + queryType + ". Aborting");
+        return;
+    }
     console.log('spotifyId = ' + spotifyId)
     console.log('spotifyType = ' + spotifyType)
 

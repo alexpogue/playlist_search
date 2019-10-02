@@ -1,4 +1,5 @@
 import json
+import datetime
 
 from flask import Blueprint, request, abort, jsonify
 
@@ -7,9 +8,10 @@ from flask import current_app as app
 from ..models.playlist import Playlist, playlist_schema, playlists_schema
 from ..models.track import Track
 from ..models.album import Album
+from ..models.track_identifier import TrackIdentifier, track_identifier_schema
 from ..models.base import db
 
-from .util import get_by_id, init_spotipy
+from .util import get_by_id, init_spotipy, lookup_playlist
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -23,6 +25,7 @@ def count_playlists():
 @admin_blueprint.route('/drop_db', methods=['GET'])
 def drop_db():
     db.drop_all()
+    return "dropped"
 
 @admin_blueprint.route('/reset_db', methods=['GET'])
 def reset_db():
@@ -34,20 +37,27 @@ def reset_db():
 
     api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
     for api_playlist in api_playlists:
+        api_playlist_snapshot_id = api_playlist['snapshot_id']
         playlist_spotify_id = api_playlist['id']
+        print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
 
-        playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
-        if playlist is not None:
-            print('found playlist already in database - skipping: {}'.format(playlist_spotify_id))
+        db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
+        if db_playlist is not None:
+            if db_playlist.snapshot_id == api_playlist['snapshot_id']:
+                print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                continue
+            else:
+                print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                continue
+        else:
+            print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+            store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
             continue
 
-        store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
+    db_playlists = Playlist.query.all()
 
-    playlists = Playlist.query.all()
+    result = playlists_schema.dump(db_playlists)
 
-    result = playlists_schema.dump(playlists)
-
-    return_val = {'result': playlists}
     return jsonify(result)
 
 def get_user_playlists(user_id, spotify, test_mode=False):
@@ -57,6 +67,7 @@ def get_user_playlists(user_id, spotify, test_mode=False):
     user_playlists = {'next':'blah'} # just something to fulfill the first condition
     while user_playlists.get('next') is not None:
         user_playlists = spotify.user_playlists(user_id, limit=PLAYLISTS_API_LIMIT, offset=i)
+        print("total user_playlists = {}".format(user_playlists['total']))
 
         for playlist in user_playlists['items']:
             yield playlist
@@ -64,15 +75,20 @@ def get_user_playlists(user_id, spotify, test_mode=False):
         i += PLAYLISTS_API_LIMIT
 
 def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify):
-    playlist = Playlist(spotify_id=playlist_spotify_id)
+    playlist_snapshot_id  = lookup_playlist(playlist_spotify_id, fields=['snapshot_id'])['snapshot_id']
+
+    playlist = Playlist(spotify_id=playlist_spotify_id, snapshot_id=playlist_snapshot_id)
+
+    print('calling add_tracks_to_playlist')
     add_tracks_to_playlist(user_spotify_id, playlist, spotify)
     db.session.commit()
 
 def add_tracks_to_playlist(user_id, playlist, spotify):
-    fields = 'items(track(id,album.id,artists)),next'
+    fields = 'items(track(id,album.id,artists),added_at),next'
+    print('calling get_user_playlist_tracks')
     api_tracks = get_user_playlist_tracks(user_id, playlist.spotify_id, fields, spotify)
 
-    for api_track in api_tracks['items']:
+    for index, api_track in enumerate(api_tracks['items']):
         # need to do this instead of using .get('track', {}).get('id') because
         # sometimes the actual value of track is None in the API and the
         # `.get('track', {})` doesn't use the default value in that case
@@ -93,11 +109,25 @@ def add_tracks_to_playlist(user_id, playlist, spotify):
             album = Album(spotify_id=api_album_spotify_id)
             track.album = album
 
-        track.playlists.append(playlist)
+        added_at_string = api_track.get('added_at')
+        added_at_datetime = None
+        if added_at_string is not None:
+            added_at_datetime = datetime.datetime.strptime(added_at_string, '%Y-%m-%dT%H:%M:%SZ')
+
+        ti = TrackIdentifier()
+        ti.playlist = playlist
+        ti.track_index_in_playlist = index
+
+        if added_at_datetime is not None:
+            ti.track_added_at = added_at_datetime
+
+        track.playlists.append(ti)
+        # TODO: add `added_at` and `index` (as position) to the association table
+        #track.added_at = api_track['added_at']
         db.session.add(track)
         # flush here so that when we query within this loop, we get the tracks
         # that haven't been committed. E.g. a song in a playlist twice
-        db.session.flush()
+        db.session.commit()
 
 def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
     PLAYLIST_TRACKS_API_LIMIT=100
