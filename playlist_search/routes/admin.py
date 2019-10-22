@@ -1,7 +1,7 @@
 import json
 import datetime
 
-from flask import Blueprint, request, abort, jsonify
+from flask import Blueprint, request, abort, jsonify, url_for
 
 from flask import current_app as app
 
@@ -10,6 +10,8 @@ from ..models.track import Track
 from ..models.album import Album
 from ..models.track_identifier import TrackIdentifier, track_identifier_schema
 from ..models.base import db
+
+from .. import celery
 
 from .util import get_by_id, init_spotipy, lookup_playlist
 
@@ -27,13 +29,59 @@ def drop_db():
     db.drop_all()
     return "dropped"
 
-@admin_blueprint.route('/reset_db', methods=['GET'])
-def reset_db():
+@celery.task(bind=True)
+def reset_db_task(self):
     spotify = init_spotipy()
 
     user_spotify_id = 'particledetector'
 
     db.create_all()
+
+    total_playlists = get_user_playlist_count(user_spotify_id, spotify)
+
+    i = 0
+
+    api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
+    for api_playlist in api_playlists:
+        api_playlist_snapshot_id = api_playlist['snapshot_id']
+        playlist_spotify_id = api_playlist['id']
+        print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
+
+        db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
+        if db_playlist is not None:
+            if db_playlist.snapshot_id == api_playlist['snapshot_id']:
+                print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                i += 1
+                self.update_state(state='PROGRESS',
+                              meta={'current': i, 'total': total_playlists,
+                                    'status': 'working'})
+                continue
+            else:
+                print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                i += 1
+                self.update_state(state='PROGRESS',
+                              meta={'current': i, 'total': total_playlists,
+                                    'status': 'working'})
+                continue
+        else:
+            print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+            store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
+            i += 1
+            self.update_state(state='PROGRESS',
+                          meta={'current': i, 'total': total_playlists,
+                                'status': 'working'})
+            continue
+
+    return {'current': total_playlists, 'total': total_playlists, 'status': 'completed'}
+
+def reset_db_no_celery():
+    spotify = init_spotipy()
+
+    user_spotify_id = 'particledetector'
+
+    db.create_all()
+
+    total_playlists = get_user_playlist_count(user_spotify_id, spotify)
 
     api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
     for api_playlist in api_playlists:
@@ -54,11 +102,48 @@ def reset_db():
             store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
             continue
 
-    db_playlists = Playlist.query.all()
+    return {'current': total_playlists, 'total': total_playlists, 'status': 'completed'}
 
-    result = playlists_schema.dump(db_playlists)
 
-    return jsonify(result)
+
+@admin_blueprint.route('/reset_db', methods=['GET'])
+def reset_db():
+    #task = reset_db_task.apply_async()
+    #return jsonify({}), 202, {'Location': url_for('admin.status', task_id=task.id)}
+    reset_db_no_celery()
+
+@admin_blueprint.route('/status/<task_id>')
+def status(task_id):
+    task = reset_db_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
+
+def get_user_playlist_count(user_id, spotify):
+    user_playlist_data = spotify.user_playlists(user_id, limit=0)
+    return user_playlist_data['total']
 
 def get_user_playlists(user_id, spotify, test_mode=False):
     PLAYLISTS_API_LIMIT = 50 # set limit to maximum

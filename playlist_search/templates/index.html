@@ -14,6 +14,7 @@ Album: <span id="songAlbum"></span><br /><br />
 Playlists:<br />
 <ul id="playlistList">
 </ul>
+<span id="playlistCsvLink"></span>
 </div>
 </p>
 <script>
@@ -98,6 +99,7 @@ function submitNewBetEventForm() {
                 $('#songName').text('');
                 $('#songArtists').text('');
                 $('#songAlbum').text('');
+                $('#playlistCsvLink').text('');
 
                 if ($.isEmptyObject(track)) {
                     $('#errorLabel').text('Error: Track not found in database (does not exist in any playlists)');
@@ -115,11 +117,14 @@ function submitNewBetEventForm() {
                     var trackRankInPlaylist = playlist.track_rank
                     var trackAddedAt = playlist.added_at
                     var playlistLink = "<a href=\"" + playlistUrl + "\">" + playlist.name + "</a>";
-                    var internalList = '<ul><li>Current position: ' + trackRankInPlaylist + '</li><li>Added at: ' + trackAddedAt + '</li></ul>'
+                    var internalList = '<ul><li>Current position: ' + trackRankInPlaylist + '</li><li>Added at: ' + trackAddedAt + '</li></ul>';
                     $('#playlistList').append($('<li>', {
                         html: playlistLink
                     })).append(internalList);
+
                 });
+                var playlistCsvAnchor = "<a href=\"/track/csv?spotify_id=" + track.id + "\">Download CSV</a>";
+                $('#playlistCsvLink').html(playlistCsvAnchor);
 
                 console.log(track);
             });

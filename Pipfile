@@ -11,6 +11,8 @@ flask-migrate = "*"
 spotipy = {editable = true, git = "https://github.com/alexpogue/spotipy.git"}
 gunicorn = "*"
 psycopg2 = "*"
+celery = "*"
+redis = "*"
 
 [requires]
 python_version = "3.7.1"
