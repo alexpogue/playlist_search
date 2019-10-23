@@ -33,74 +33,78 @@ def drop_db():
 def reset_db_task(self):
     spotify = init_spotipy()
 
-    user_spotify_id = 'particledetector'
+    user_spotify_ids = ['particledetector', 'thesoundsofspotify']
 
     db.create_all()
 
-    total_playlists = get_user_playlist_count(user_spotify_id, spotify)
+    
+    for user_spotify_id in user_spotify_ids:
+        print('user_spotify_id = {}'.format(user_spotify_id))
+        
+        total_playlists = get_user_playlist_count(user_spotify_id, spotify)
 
-    i = 0
+        i = 0
 
-    api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
-    for api_playlist in api_playlists:
-        api_playlist_snapshot_id = api_playlist['snapshot_id']
-        playlist_spotify_id = api_playlist['id']
-        print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
+        api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
+        for api_playlist in api_playlists:
+            api_playlist_snapshot_id = api_playlist['snapshot_id']
+            playlist_spotify_id = api_playlist['id']
+            print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
 
-        db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
-        if db_playlist is not None:
-            if db_playlist.snapshot_id == api_playlist['snapshot_id']:
-                print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
-                i += 1
-                self.update_state(state='PROGRESS',
-                              meta={'current': i, 'total': total_playlists,
-                                    'status': 'working'})
-                continue
+            db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
+            if db_playlist is not None:
+                if db_playlist.snapshot_id == api_playlist['snapshot_id']:
+                    print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                    i += 1
+                    self.update_state(state='PROGRESS',
+                                  meta={'current': i, 'total': total_playlists,
+                                        'status': 'working'})
+                    continue
+                else:
+                    print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                    i += 1
+                    self.update_state(state='PROGRESS',
+                                  meta={'current': i, 'total': total_playlists,
+                                        'status': 'working'})
+                    continue
             else:
-                print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+                store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                 i += 1
                 self.update_state(state='PROGRESS',
                               meta={'current': i, 'total': total_playlists,
                                     'status': 'working'})
                 continue
-        else:
-            print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
-            store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
-            i += 1
-            self.update_state(state='PROGRESS',
-                          meta={'current': i, 'total': total_playlists,
-                                'status': 'working'})
-            continue
 
     return {'current': total_playlists, 'total': total_playlists, 'status': 'completed'}
 
 def reset_db_no_celery():
     spotify = init_spotipy()
 
-    user_spotify_id = 'particledetector'
+    user_spotify_ids = ['particledetector', 'thesoundsofspotify']
 
     db.create_all()
 
-    total_playlists = get_user_playlist_count(user_spotify_id, spotify)
+    for user_spotify_id in user_spotify_ids:
+        print('user_spotify_id = {}'.format(user_spotify_id))
+        api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
+        for api_playlist in api_playlists:
+            api_playlist_snapshot_id = api_playlist['snapshot_id']
+            playlist_spotify_id = api_playlist['id']
+            print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
 
-    api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
-    for api_playlist in api_playlists:
-        api_playlist_snapshot_id = api_playlist['snapshot_id']
-        playlist_spotify_id = api_playlist['id']
-        print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
-
-        db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
-        if db_playlist is not None:
-            if db_playlist.snapshot_id == api_playlist['snapshot_id']:
-                print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
-                continue
+            db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
+            if db_playlist is not None:
+                if db_playlist.snapshot_id == api_playlist['snapshot_id']:
+                    print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                    continue
+                else:
+                    print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                    continue
             else:
-                print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+                store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                 continue
-        else:
-            print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
-            store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
-            continue
 
     return {'current': total_playlists, 'total': total_playlists, 'status': 'completed'}
 
