@@ -13,7 +13,7 @@ root_api_blueprint = Blueprint('root_api', __name__)
 auth = HTTPBasicAuth()
 
 users = {
-    'hi': generate_password_hash('bye')
+    'student': generate_password_hash('buildaband')
 }
 
 @auth.verify_password
