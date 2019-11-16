@@ -12,8 +12,11 @@ Flask-HTTPAuth = "*"
 spotipy = {editable = true, git = "https://github.com/alexpogue/spotipy.git"}
 gunicorn = "*"
 psycopg2 = "*"
-celery = "*"
 redis = "*"
+PyMySQL = "*"
+
+# commented to fix amqp pipenv error
+#celery = "*"
 
 [requires]
 python_version = "3.7.1"
