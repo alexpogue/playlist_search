@@ -16,7 +16,7 @@ redis = "*"
 PyMySQL = "*"
 
 # commented to fix amqp pipenv error
-#celery = "*"
+celery = "*"
 
 [requires]
 python_version = "3.7.1"
