@@ -1,24 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-<form action="#" id="spotify_url_form" onsubmit="submitNewBetEventForm();return false">
+<div class="spotify_url_form">
 Spotify song URL: <input type="text" id="spotify_url_textbox"></input>
-<input type="submit">
-</form>
-<p>
-<span id="rawResults"></span>
-<div id="results">
-<span id="errorLabel"></span><br /><br />
-Name: <span id="songName"></span><br />
-Artist: <span id="songArtists"></span><br />
-Album: <span id="songAlbum"></span><br /><br />
-Playlists:<br />
-<ul id="playlistList">
-</ul>
-<span id="playlistCsvLink"></span>
+<button class="do_search">Search Playlists</button>
 </div>
-</p>
+<div>
+<span id="error_label"></span><br /><br />
+Name: <span id="song_name"></span><br />
+Artist: <span id="song_artists"></span><br />
+Album: <span id="song_album"></span><br /><br />
+Playlists:<br />
+<ul id="playlist_list">
+</ul>
+<span id="playlist_csv_link"></span>
+</div>
 <script>
-
+$( document ).ready( function() {
+    $( '.spotify_url_form' ).on( 'click', '.do_search', function( event ) {
+        submitNewBetEventForm()
+    } );
+} );
 function removeTrailingCharIfExists(url, theChar) {
     var lastSlash = url.lastIndexOf(theChar);
     if (lastSlash == url.length - 1) {
@@ -94,22 +95,22 @@ function submitNewBetEventForm() {
     if (spotifyType == 'track') {
         $.get("/track/?spotify_id="+spotifyId, {},
             function(track) {
-                $('#errorLabel').text('');
-                $('#playlistList').text('');
-                $('#songName').text('');
-                $('#songArtists').text('');
-                $('#songAlbum').text('');
-                $('#playlistCsvLink').text('');
+                $('#error_label').text('');
+                $('#playlist_list').text('');
+                $('#song_name').text('');
+                $('#song_artists').text('');
+                $('#song_album').text('');
+                $('#playlist_csv_link').text('');
 
                 if ($.isEmptyObject(track)) {
-                    $('#errorLabel').text('Error: Track not found in database (does not exist in any playlists)');
+                    $('#error_label').text('Error: Track not found in database (does not exist in any playlists)');
                     return;
                 }
 
-                $('#songName').text(track.name);
+                $('#song_name').text(track.name);
                 var artistNames = $.map(track.artists, function(artist) { return artist["name"] });
-                $('#songArtists').text(artistNames.join(', '))
-                $('#songAlbum').text(track.album["name"]);
+                $('#song_artists').text(artistNames.join(', '))
+                $('#song_album').text(track.album["name"]);
 
                 $.each(track.playlists, function(index, playlist) {
                     console.log(playlist);
@@ -118,38 +119,38 @@ function submitNewBetEventForm() {
                     var trackAddedAt = playlist.added_at
                     var playlistLink = "<a href=\"" + playlistUrl + "\">" + playlist.name + "</a>";
                     var internalList = '<ul><li>Current position: ' + trackRankInPlaylist + '</li><li>Added at: ' + trackAddedAt + '</li></ul>';
-                    $('#playlistList').append($('<li>', {
+                    $('#playlist_list').append($('<li>', {
                         html: playlistLink
                     })).append(internalList);
 
                 });
                 var playlistCsvAnchor = "<a href=\"/track/csv?spotify_id=" + track.id + "\">Download CSV</a>";
-                $('#playlistCsvLink').html(playlistCsvAnchor);
+                $('#playlist_csv_link').html(playlistCsvAnchor);
 
                 console.log(track);
             });
     } else if (spotifyType == "album") {
         $.get("/album/?spotify_id="+spotifyId, {},
             function(album) {
-                $('#errorLabel').text('');
-                $('#playlistList').text('');
-                $('#songName').text('');
-                $('#songArtists').text('');
-                $('#songAlbum').text('');
+                $('#error_label').text('');
+                $('#playlist_list').text('');
+                $('#song_name').text('');
+                $('#song_artists').text('');
+                $('#song_album').text('');
 
                 if ($.isEmptyObject(album)) {
-                    $('#errorLabel').text('Error: Album not found in database (none of its tracks are in the playlists we stored)');
+                    $('#error_label').text('Error: Album not found in database (none of its tracks are in the playlists we stored)');
                     return;
                 }
 
 
-                //$('#songName').text(album.name);
+                //$('#song_name').text(album.name);
                 var artistNames = $.map(album.artists, function(artist) { return artist["name"] });
-                $('#songArtists').text(artistNames.join(", "))
-                $('#songAlbum').text(album["name"]);
+                $('#song_artists').text(artistNames.join(", "))
+                $('#song_album').text(album["name"]);
 
                 //$.each(album.playlists, function(index, element) {
-                //    $('#playlistList').append($('<li>', {
+                //    $('#playlist_list').append($('<li>', {
                 //        text: element.name
                 //    }));
                 //});
