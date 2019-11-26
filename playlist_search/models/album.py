@@ -9,7 +9,7 @@ class Album(db.Model):
     __tablename__ = 'album'
     id = db.Column(db.Integer, primary_key=True)
     spotify_id = db.Column(db.String(22), nullable=False)
-    tracks = db.relationship("Track", back_populates="album")
+    tracks = db.relationship("Track", back_populates="album", cascade="all, delete, delete-orphan")
 
 class AlbumSchema(ma.Schema):
     id = fields.Integer()

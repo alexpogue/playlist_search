@@ -7,9 +7,9 @@ class Track(db.Model):
     __tablename__ = 'track'
     id = db.Column(db.Integer, primary_key=True)
     spotify_id = db.Column(db.String(22), index=True, nullable=False)
-    playlists = db.relationship("TrackIdentifier", back_populates='track')
+    playlists = db.relationship("TrackIdentifier", back_populates='track', cascade="all, delete, delete-orphan")
     album_id = db.Column(db.Integer, db.ForeignKey('album.id'))
-    album = db.relationship("Album", back_populates="tracks")
+    album = db.relationship("Album", back_populates="tracks", cascade="all, delete, delete-orphan")
 
 class TrackSchema(ma.Schema):
     id = fields.Integer()

@@ -10,7 +10,7 @@ class Playlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     spotify_id = db.Column(db.String(22), index=True, nullable=False)
     snapshot_id = db.Column(db.String(64), nullable=False)
-    tracks = db.relationship("TrackIdentifier", back_populates="playlist")
+    tracks = db.relationship("TrackIdentifier", back_populates="playlist", cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return "<Playlist: '{}' ({}), tracks: {}>".format(self.id, self.spotify_id, self.tracks)
