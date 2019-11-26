@@ -31,6 +31,7 @@ def drop_db():
 
 @celery.task(bind=True)
 def reset_db_task(self):
+    # TODO: OUT OF SYNC WITH NO_CELERY VERSION -- DONT USE UNTIL RESYNCING WITH OTHER CODE
     spotify = init_spotipy()
 
     user_spotify_ids = ['particledetector', 'thesoundsofspotify']
@@ -99,7 +100,9 @@ def reset_db_no_celery():
                     print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
                     continue
                 else:
-                    print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                    print('found playlist already in playlist, but not up to date - updating: {}'.format(playlist_spotify_id))
+                    db.session.delete(db_playlist)
+                    store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                     continue
             else:
                 print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
@@ -110,7 +113,7 @@ def reset_db_no_celery():
 
 
 
-@admin_blueprint.route('/reset_db', methods=['GET'])
+@admin_blueprint.route('/reset_db', methods=['POST'])
 def reset_db():
     #task = reset_db_task.apply_async()
     #return jsonify({}), 202, {'Location': url_for('admin.status', task_id=task.id)}
@@ -211,8 +214,6 @@ def add_tracks_to_playlist(user_id, playlist, spotify):
             ti.track_added_at = added_at_datetime
 
         track.playlists.append(ti)
-        # TODO: add `added_at` and `index` (as position) to the association table
-        #track.added_at = api_track['added_at']
         db.session.add(track)
         # flush here so that when we query within this loop, we get the tracks
         # that haven't been committed. E.g. a song in a playlist twice
