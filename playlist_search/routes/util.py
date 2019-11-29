@@ -68,22 +68,17 @@ def lookup_playlist(playlist_spotify_id, fields=None):
     return api_playlist
 
 def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
-    print('getting tracks from playlist')
     api_tracks = lookup_tracks_from_playlist(playlist_spotify_id, ['items.track.id', 'items.added_at'])
-    print('got tracks from playlist')
 
     rank = -1
     added_at = 'not found'
     for index, track in enumerate(api_tracks):
         track_track = track.get('track')
-        print('looking at track {}'.format(track_track['id']))
         if track_track is not None and track_track['id'] == track_spotify_id:
-            print('match')
             rank = index + 1
             added_at = track['added_at']
             break
 
-    print('returning')
     return {'track_rank': rank, 'added_at': added_at}
 
 def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):

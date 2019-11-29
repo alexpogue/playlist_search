@@ -3,7 +3,7 @@ import io
 import csv
 import datetime
 
-from flask import Blueprint, request, abort, jsonify, make_response
+from flask import Blueprint, request, abort, jsonify, make_response, current_app as app
 from ..models.track import Track
 from ..models.base import db
 
@@ -43,10 +43,9 @@ def combine_info_for_track(spotify_id):
     api_track = lookup_track(spotify_id, fields=['id', 'artists', 'album', 'name'])
 
     track_from_db = Track.query.filter_by(spotify_id=spotify_id).first()
-    print('track_from_db  = {}'.format(track_from_db ))
+    app.logger.info('track_from_db  = {}'.format(track_from_db ))
 
     if track_from_db is not None:
-        print('track_from_db is not None')
         track_identifiers_from_db = track_from_db.playlists
 
         # this array is filled in below
@@ -117,5 +116,5 @@ def convert_track_to_csv(track):
 @track_blueprint.route('/<int:track_id>', methods=['GET'])
 def get_track_by_id(track_id):
     track = get_by_id(Track, track_id, track_schema)
-    print('track  = {}'.format(track ))
+    app.logger.info('track  = {}'.format(track ))
     return lookup_track(track['spotify_id'])

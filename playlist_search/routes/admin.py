@@ -40,7 +40,7 @@ def reset_db_task(self):
 
     
     for user_spotify_id in user_spotify_ids:
-        print('user_spotify_id = {}'.format(user_spotify_id))
+        app.logger.info('user_spotify_id = {}'.format(user_spotify_id))
         
         total_playlists = get_user_playlist_count(user_spotify_id, spotify)
 
@@ -50,26 +50,26 @@ def reset_db_task(self):
         for api_playlist in api_playlists:
             api_playlist_snapshot_id = api_playlist['snapshot_id']
             playlist_spotify_id = api_playlist['id']
-            print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
+            app.logger.info('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
 
             db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
             if db_playlist is not None:
                 if db_playlist.snapshot_id == api_playlist['snapshot_id']:
-                    print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                    app.logger.info('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
                     i += 1
                     self.update_state(state='PROGRESS',
                                   meta={'current': i, 'total': total_playlists,
                                         'status': 'working'})
                     continue
                 else:
-                    print('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                    app.logger.info('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
                     i += 1
                     self.update_state(state='PROGRESS',
                                   meta={'current': i, 'total': total_playlists,
                                         'status': 'working'})
                     continue
             else:
-                print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+                app.logger.info('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
                 store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                 i += 1
                 self.update_state(state='PROGRESS',
@@ -87,25 +87,25 @@ def reset_db_no_celery():
     db.create_all()
 
     for user_spotify_id in user_spotify_ids:
-        print('user_spotify_id = {}'.format(user_spotify_id))
+        app.logger.info('user_spotify_id = {}'.format(user_spotify_id))
         api_playlists = get_user_playlists(user_spotify_id, spotify, test_mode=False)
         for api_playlist in api_playlists:
             api_playlist_snapshot_id = api_playlist['snapshot_id']
             playlist_spotify_id = api_playlist['id']
-            print('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
+            app.logger.info('playlist_spotify_id  = {}'.format(playlist_spotify_id ))
 
             db_playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id).first()
             if db_playlist is not None:
                 if db_playlist.snapshot_id == api_playlist['snapshot_id']:
-                    print('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
+                    app.logger.info('found playlist already in database and up to date - skipping: {}'.format(playlist_spotify_id))
                     continue
                 else:
-                    print('found playlist already in playlist, but not up to date - updating: {}'.format(playlist_spotify_id))
+                    app.logger.info('found playlist already in playlist, but not up to date - updating: {}'.format(playlist_spotify_id))
                     db.session.delete(db_playlist)
                     store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                     continue
             else:
-                print('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
+                app.logger.info('did not find playlist in database, creating a new one: {}'.format(playlist_spotify_id))
                 store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                 continue
 
@@ -159,7 +159,7 @@ def get_user_playlists(user_id, spotify, test_mode=False):
     user_playlists = {'next':'blah'} # just something to fulfill the first condition
     while user_playlists.get('next') is not None:
         user_playlists = spotify.user_playlists(user_id, limit=PLAYLISTS_API_LIMIT, offset=i)
-        print("total user_playlists = {}".format(user_playlists['total']))
+        app.logger.info("total user_playlists = {}".format(user_playlists['total']))
 
         for playlist in user_playlists['items']:
             yield playlist
@@ -171,13 +171,11 @@ def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, sp
 
     playlist = Playlist(spotify_id=playlist_spotify_id, snapshot_id=playlist_snapshot_id)
 
-    print('calling add_tracks_to_playlist')
     add_tracks_to_playlist(user_spotify_id, playlist, spotify)
     db.session.commit()
 
 def add_tracks_to_playlist(user_id, playlist, spotify):
     fields = 'items(track(id,album.id,artists),added_at),next'
-    print('calling get_user_playlist_tracks')
     api_tracks = get_user_playlist_tracks(user_id, playlist.spotify_id, fields, spotify)
 
     for index, api_track in enumerate(api_tracks['items']):
@@ -223,7 +221,7 @@ def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
     PLAYLIST_TRACKS_API_LIMIT=100
     tracks = []
 
-    print('processing playlist {}'.format(playlist_id))
+    app.logger.info('processing playlist {}'.format(playlist_id))
 
     i = 0
     api_tracks = {'next': 'blah'} # just something to fulfill the first condition

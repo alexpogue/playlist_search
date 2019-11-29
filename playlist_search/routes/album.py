@@ -41,18 +41,14 @@ def get_album_by_spotify_id():
             api_playlists = lookup_playlists(playlist_spotify_ids_from_db, ['name'])
 
             api_track['playlists'] = api_playlists['playlists']
-            print('api_track = {}'.format(json.dumps(api_track, indent=4)))
 
 
         api_album = lookup_album(album_from_db.spotify_id)
         api_album['tracks'] = api_tracks
-
-        print('album = {}'.format(json.dumps(album, indent=4)))
 
     return album
 
 @album_blueprint.route('/<int:album_id>', methods=['GET'])
 def get_album_by_id(album_id):
     album = get_by_id(Album, album_id, album_schema)
-    print('album  = {}'.format(album ))
     return lookup_album(album['spotify_id'])
