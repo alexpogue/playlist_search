@@ -11,7 +11,7 @@ import os
 import sys
 import config
 
-celery = Celery(__name__, broker=config.CELERY_BROKER_URL)
+celery = Celery(__name__, backend=config.CELERY_RESULT_BACKEND, broker=config.CELERY_BROKER_URL)
 
 if 'RUNNING_ON_HEROKU' in os.environ and os.environ['RUNNING_ON_HEROKU'] == 'True':
     generate_config_file_from_heroku_env()

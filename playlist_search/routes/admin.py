@@ -115,9 +115,9 @@ def reset_db_no_celery():
 
 @admin_blueprint.route('/reset_db', methods=['POST'])
 def reset_db():
-    #task = reset_db_task.apply_async()
-    #return jsonify({}), 202, {'Location': url_for('admin.status', task_id=task.id)}
-    reset_db_no_celery()
+    task = reset_db_task.apply_async()
+    return jsonify({}), 202, {'Location': url_for('admin.status', task_id=task.id)}
+    #reset_db_no_celery()
 
 @admin_blueprint.route('/status/<task_id>')
 def status(task_id):
