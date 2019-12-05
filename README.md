@@ -36,3 +36,4 @@ playlist_search is a Python Flask app that helps users find which Spotify playli
 4. To run the app, in the other terminal, either:
     - For Flask dev server: `python main.py`
     - For gunicorn: `gunicorn --bind 0.0.0.0:5000 wsgi`
+
