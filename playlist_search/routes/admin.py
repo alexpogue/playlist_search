@@ -62,7 +62,9 @@ def reset_db_task(self):
                                         'status': 'working'})
                     continue
                 else:
-                    app.logger.info('found playlist already in playlist, but not up to date - updating: {} - TODO IN CONSTRUCTION'.format(playlist_spotify_id))
+                    app.logger.info('found playlist already in playlist, but not up to date - updating: {}'.format(playlist_spotify_id))
+                    db.session.delete(db_playlist)
+                    store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify)
                     i += 1
                     self.update_state(state='PROGRESS',
                                   meta={'current': i, 'total': total_playlists,
