@@ -67,7 +67,7 @@ def convert_track_to_csv(track):
     csv_writer = csv.writer(string_io)
     csv_writer.writerow(CSV_HEADINGS)
 
-    playlists = track['playlists']
+    playlists = track.get('playlists', [])
     for playlist in playlists:
         csv_row = []
         # platform
