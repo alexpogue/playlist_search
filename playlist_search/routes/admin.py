@@ -42,6 +42,11 @@ def reset_db_task(self):
     total_playlist_count = sum(user_playlist_counts)
     print('total_playlist_count  = {}'.format(total_playlist_count ))
 
+    # add playlists in db to total so that progress bar only shows complete after we delete old playlists too
+    count_playlists_in_db = Playlist.query.count()
+
+    total_playlist_count += count_playlists_in_db
+
     cur_playlist = 0
     
     for user_spotify_id in user_spotify_ids:
@@ -69,6 +74,12 @@ def reset_db_task(self):
             self.update_state(state='PROGRESS',
                           meta={'current': cur_playlist, 'total': total_playlist_count,
                                 'status': 'syncing_playlists_{}'.format(user_spotify_id)})
+
+
+#   for every playlist in playlist database:
+#       look up playlist by id in spotify
+#       if playlist is None:
+#           delete playlist from database
 
     return {'current': total_playlist_count, 'total': total_playlist_count, 'status': 'completed'}
 

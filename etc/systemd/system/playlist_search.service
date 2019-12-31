@@ -1,0 +1,10 @@
+[Unit]
+Description=Gunicorn instance to serve Playlist Search API Python Flask app.
+After=network.target
+
+[Service]
+WorkingDirectory=/home/bandbldr/git/playlist_search
+ExecStart=/usr/bin/pipenv run gunicorn --workers 3 --bind 0.0.0.0:5000 --timeout 200 wsgi
+
+[Install]
+WantedBy=multi-user.target

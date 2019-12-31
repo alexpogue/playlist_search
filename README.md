@@ -37,3 +37,38 @@ playlist_search is a Python Flask app that helps users find which Spotify playli
     - For Flask dev server: `python main.py`
     - For gunicorn: `gunicorn --bind 0.0.0.0:5000 wsgi`
 
+### Installing Wordpress plugin
+
+1. `cd wordpress_plugin`
+2. `zip -r playlist-search-plugin.zip playlist-search-plugin`
+3. Navigate to the Wordpress plugins page and install it from the zip file.
+
+### Setting up as system services (for RHEL 7)
+
+#### playlist_search as a system service
+
+1. Copy `etc/systemd/system/playlist_search.service` in the repo to `/etc/systemd/system/playlist_search.service`
+2. In the above file, under `[Service]`, change the WorkingDirectory to the location the repo is cloned to.
+3. `chmod 644 /etc/systemd/system/playlist_search.service`
+3. To start, run `systemctl start playlist_search`
+4. To enable on boot:
+    1. `systemctl enable playlist_search`
+    2. Ensure `systemctl status playlist_search` outputs "enabled" as in the following output:
+        ```
+                                                                     vvvvvvv
+        Loaded: loaded (/etc/systemd/system/playlist_search.service; enabled; vendor preset: disabled)
+        ```
+
+#### celery as a system service
+
+2. Copy `etc/default/celeryd` in the repo to `/etc/default/celeryd`
+2. In the above file, change `cd` portion of `CELERY_BIN` to the location the repo is cloned to.
+3. `chmod 755 /etc/default/celeryd`
+4. To start, run `service celeryd start`
+4. To enable on boot:
+    1. `chkconfig --add celeryd`
+    1. Ensure `chkconfig --list celeryd` outputs the following:
+        ```
+        celeryd        	0:off	1:off	2:on	3:on	4:on	5:on	6:off
+        ```
+    2. If above command returned more things listed `off`, try running `chkconfig celeryd on` and try again
