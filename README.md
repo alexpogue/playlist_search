@@ -25,7 +25,7 @@ playlist_search is a Python Flask app that helps users find which Spotify playli
     Note: change `SQLALCHEMY_DATABASE_URI` if you want to post to another database.
 
 5. `pipenv shell`
-6. `pipenv update`
+6. `pipenv install --ignore-pipfile`
 
 ### Running
 
