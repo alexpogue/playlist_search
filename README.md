@@ -43,6 +43,11 @@ playlist_search is a Python Flask app that helps users find which Spotify playli
 2. `zip -r playlist-search-plugin.zip playlist-search-plugin`
 3. Navigate to the Wordpress plugins page and install it from the zip file.
 
+### Usage
+
+1. To put the tool somewhere in wordpress, insert the shortcode `[playlist-search-tool]` into any Wordpress post.
+2. To update the database with the `particledetector` and `soundsofspotify` playlists, navigate to the plugin settings from the main Wordpress dashboard and press the `Update db` button. A loading bar should appear showing the status.
+
 ### Setting up as system services (for RHEL 7)
 
 #### playlist_search as a system service
@@ -72,3 +77,11 @@ playlist_search is a Python Flask app that helps users find which Spotify playli
         celeryd        	0:off	1:off	2:on	3:on	4:on	5:on	6:off
         ```
     2. If above command returned more things listed `off`, try running `chkconfig celeryd on` and try again
+
+### Known issues
+
+1. If there are errors in db update, the loading bar will show red, and you should press `Update db` again. This can happen frequently with the main fork of spotipy that we use (I don't think it refreshes the auth token or something).
+2. Only press the button once at a time - each press will start a new celery worker. Eventually we might only allow one celery worker, but I haven't started that work.
+3. The `Download CSV` link takes a second to show up since we run another HTTP request to get the results again. Instead, we can run one HTTP request and generate both the results and the CSV file using the single request. Previously we had the server process the request and send us a CSV download directly, but I don't think that's possible through the Wordpress AJAX proxy.
+
+
