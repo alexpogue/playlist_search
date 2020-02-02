@@ -2,15 +2,19 @@ import json
 from flask import abort, jsonify
 from flask import current_app as app
 
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
+from tekore import Spotify
+from tekore.util import request_client_token
+from tekore.sender import RetryingSender
 
 def init_spotipy():
     spotify_client_id = app.config['SPOTIFY_CLIENT_ID']
     spotify_client_secret = app.config['SPOTIFY_CLIENT_SECRET']
 
-    client_credentials_manager = SpotifyClientCredentials(spotify_client_id, spotify_client_secret)
-    return spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+    app_token = request_client_token(spotify_client_id, spotify_client_secret)
+
+    # use RetryingSender to retry when we are rate limited by spotify API
+    sender = RetryingSender()
+    return Spotify(app_token, sender=sender)
 
 def get_by_id(model_cls, lookup_id, schema):
     model_obj = model_cls.query.get(lookup_id)
@@ -64,7 +68,10 @@ def lookup_playlist(playlist_spotify_id, fields=None):
     if fields is not None:
         str_fields = ','.join(fields)
 
-    api_playlist = spotify.playlist(playlist_spotify_id, fields=str_fields)
+    # Commented out because of issue with `fields` param on this function,
+    # see https://github.com/felix-hilden/tekore/issues/142 for details
+    #api_playlist = spotify.playlist(playlist_spotify_id), fields=str_fields)
+    api_playlist = spotify.playlist(playlist_spotify_id)
     return api_playlist
 
 def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):

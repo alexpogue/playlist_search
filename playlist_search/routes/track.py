@@ -14,9 +14,6 @@ from flask_marshmallow import pprint
 
 from .util import get_by_id, lookup_track, lookup_playlists, get_track_in_playlist_details, lookup_playlist
 
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-
 track_blueprint = Blueprint('tracks', __name__)
 
 @track_blueprint.route('/')

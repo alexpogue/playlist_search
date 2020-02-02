@@ -9,11 +9,11 @@ flask-sqlalchemy = "*"
 flask-marshmallow = "*"
 flask-migrate = "*"
 Flask-HTTPAuth = "*"
-spotipy = {editable = true, git = "https://github.com/alexpogue/spotipy.git"}
 gunicorn = "*"
 psycopg2 = "*"
 redis = "*"
 PyMySQL = "*"
+tekore = "*"
 
 # commented to fix amqp pipenv error
 celery = "*"
