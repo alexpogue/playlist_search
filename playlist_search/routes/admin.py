@@ -136,7 +136,7 @@ def get_user_playlists(user_id, spotify, test_mode=False):
             break
 
 def store_playlist_and_subobjects_to_db(user_spotify_id, playlist_spotify_id, spotify):
-    playlist_snapshot_id  = lookup_playlist(playlist_spotify_id, fields=['snapshot_id']).snapshot_id
+    playlist_snapshot_id  = lookup_playlist(playlist_spotify_id, fields=['snapshot_id'])['snapshot_id']
 
     playlist = Playlist(spotify_id=playlist_spotify_id, snapshot_id=playlist_snapshot_id)
 

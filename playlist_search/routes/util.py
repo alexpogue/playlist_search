@@ -70,8 +70,7 @@ def lookup_playlist(playlist_spotify_id, fields=None):
 
     # Commented out because of issue with `fields` param on this function,
     # see https://github.com/felix-hilden/tekore/issues/142 for details
-    #api_playlist = spotify.playlist(playlist_spotify_id), fields=str_fields)
-    api_playlist = spotify.playlist(playlist_spotify_id)
+    api_playlist = spotify.playlist(playlist_spotify_id, fields=str_fields)
     return api_playlist
 
 def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
@@ -113,14 +112,6 @@ def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
         for api_track in api_tracks['items']:
             yield api_track
 
-
-def lookup_album(album_spotify_id, fields=None):
-    spotify = init_spotipy()
-    album = spotify.album(album_spotify_id)
-    if fields is not None:
-        album = filter_album_by_fields(album, fields)
-    return album
-
 def filter_tracks_by_fields(tracks, fields):
     if fields is None:
         return tracks
@@ -129,9 +120,4 @@ def filter_tracks_by_fields(tracks, fields):
 def filter_track_by_fields(track, fields):
     if fields is None:
         return track
-    return { field: track[field] for field in fields }
-
-def filter_album_by_fields(album, fields):
-    if fields is None:
-        return album
-    return { field: album[field] for field in fields }
+    return { field: getattr(track, field) for field in fields }

@@ -1,8 +1,6 @@
 from .base import db
 from .base import ma
 
-from .album_identifier import album_identifier
-
 from marshmallow import fields
 
 class Playlist(db.Model):
