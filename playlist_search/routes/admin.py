@@ -41,8 +41,6 @@ def reset_db_task(self):
     # add playlists in db to total so that progress bar only shows complete after we delete old playlists too
     count_playlists_in_db = Playlist.query.count()
 
-    total_playlist_count += count_playlists_in_db
-
     cur_playlist = 0
     
     for user_spotify_id in user_spotify_ids:
