@@ -7,7 +7,6 @@ from flask import current_app as app
 
 from ..models.playlist import Playlist, playlist_schema, playlists_schema
 from ..models.track import Track
-from ..models.album import Album
 from ..models.track_identifier import TrackIdentifier, track_identifier_schema
 from ..models.base import db
 
