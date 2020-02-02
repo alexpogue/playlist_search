@@ -37,8 +37,11 @@ def get_track_csv_by_spotify_id():
     return track_in_csv
 
 def combine_info_for_track(spotify_id):
-    api_track = lookup_track(spotify_id, fields=['id', 'name', 'artists'])
-    api_track['album'] = {'name': 'unknown'}
+    fields = ['id', 'name', 'artists']
+    api_track_obj = lookup_track(spotify_id)
+
+    api_track = { field: getattr(api_track_obj, field) for field in fields }
+    api_track['album'] = {'name': api_track_obj.album.name}
 
     track_from_db = Track.query.filter_by(spotify_id=spotify_id).first()
     app.logger.info('track_from_db  = {}'.format(track_from_db ))
