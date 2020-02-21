@@ -13,7 +13,7 @@ def init_spotipy():
     app_token = request_client_token(spotify_client_id, spotify_client_secret)
 
     # use RetryingSender to retry when we are rate limited by spotify API
-    sender = RetryingSender(retries=5)
+    sender = RetryingSender(retries=100)
     return Spotify(app_token, sender=sender)
 
 def get_by_id(model_cls, lookup_id, schema):

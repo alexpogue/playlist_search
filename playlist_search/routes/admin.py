@@ -25,8 +25,14 @@ def drop_db():
     db.drop_all()
     return "dropped"
 
+@admin_blueprint.route('/current_tasks', methods=['GET'])
+def get_current_celery_tasks():
+    i = celery.control.inspect()
+    return i.active()
+
 @celery.task(bind=True)
 def reset_db_task(self):
+    get_current_celery_tasks()
     spotify = init_spotipy()
 
     user_spotify_ids = ['particledetector', 'thesoundsofspotify']
@@ -194,3 +200,6 @@ def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
             break
 
     return {'items': tracks}
+
+
+
