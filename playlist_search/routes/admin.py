@@ -11,8 +11,11 @@ from ..models.track_identifier import TrackIdentifier, track_identifier_schema
 from ..models.base import db
 
 from .. import celery
+from celery import Celery
 
 from .util import get_by_id, init_spotipy, lookup_playlist
+
+import redis
 
 admin_blueprint = Blueprint('admin', __name__)
 
@@ -24,6 +27,11 @@ def count_playlists():
 def drop_db():
     db.drop_all()
     return "dropped"
+
+@admin_blueprint.route('/queued_tasks', methods=['GET'])
+def get_tasks_in_queue():
+    r = redis.StrictRedis.from_url(app.config['CELERY_BROKER_URL'])
+    return {'num_tasks': r.llen('celery')}
 
 @celery.task(bind=True)
 def reset_db_task(self):
@@ -187,7 +195,7 @@ def get_user_playlist_tracks(user_id, playlist_id, fields, spotify):
 
     offset = 0
     while True:
-        api_tracks = spotify.playlist_tracks(playlist_id, fields=fields, limit=PLAYLIST_TRACKS_API_LIMIT, offset=offset)
+        api_tracks = spotify.playlist_items(playlist_id, fields=fields, limit=PLAYLIST_TRACKS_API_LIMIT, offset=offset)
         tracks.extend(api_tracks['items'])
         offset += PLAYLIST_TRACKS_API_LIMIT
         if api_tracks['next'] is None:

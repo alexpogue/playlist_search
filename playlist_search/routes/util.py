@@ -3,8 +3,8 @@ from flask import abort, jsonify
 from flask import current_app as app
 
 from tekore import Spotify
-from tekore.util import request_client_token
-from tekore.sender import RetryingSender
+from tekore._auth.util import request_client_token
+from tekore._sender import RetryingSender
 
 def init_spotipy():
     spotify_client_id = app.config['SPOTIFY_CLIENT_ID']
@@ -102,13 +102,13 @@ def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
     #       ... Maybe this function yields to infinity on all playlists, but we find a matching track in a playlist first so we break early from get_track_in_playlist_details.
 
     # TODO: clean up the duplicated code - use similar strategy as admin.get_user_playlist_tracks
-    api_tracks = spotipy.playlist_tracks(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT)
+    api_tracks = spotipy.playlist_items(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT)
     for api_track in api_tracks['items']:
         yield api_track
 
     i = TRACKS_API_LIMIT
     while api_tracks.get('next') is not None:
-        api_tracks = spotipy.playlist_tracks(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT, offset=i)
+        api_tracks = spotipy.playlist_items(playlist_spotify_id, fields=str_fields, limit=TRACKS_API_LIMIT, offset=i)
         for api_track in api_tracks['items']:
             yield api_track
 

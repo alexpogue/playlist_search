@@ -11,7 +11,7 @@ Flask-HTTPAuth = "*"
 gunicorn = "*"
 redis = "*"
 PyMySQL = "*"
-tekore = ">=1.1.0"
+tekore = {git = "https://github.com/alexpogue/tekore.git"}
 
 # commented to fix amqp pipenv error
 celery = "*"
