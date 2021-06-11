@@ -12,9 +12,10 @@ gunicorn = "*"
 redis = "*"
 PyMySQL = "*"
 tekore = {git = "https://github.com/alexpogue/tekore.git"}
+httpx = ">=0.11,<0.18"
 
 # commented to fix amqp pipenv error
-celery = "*"
+celery = "==4.4.0"
 
 [requires]
 python_version = "3.7.1"

@@ -92,6 +92,15 @@ def reset_db():
     return jsonify({}), 202, {'Location': url_for('admin.status', task_id=task.id)}
     #reset_db_no_celery()
 
+@admin_blueprint.route('/custom_status/<task_id>')
+def custom_status(task_id):
+    task = reset_db_task.AsyncResult(task_id)
+
+    result = {'result': json.dumps(task.info)}
+
+    return jsonify(result)
+
+
 @admin_blueprint.route('/status/<task_id>')
 def status(task_id):
     task = reset_db_task.AsyncResult(task_id)
