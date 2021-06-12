@@ -2,48 +2,34 @@ import json
 import sys
 import time
 
-from flask import abort, jsonify
-from flask import current_app as app
-
-from tekore import Spotify
-from tekore._auth.util import request_client_token
-from tekore._sender import RetryingSender, SyncSender
-from tekore import ServiceUnavailable
-
-from .super_retrying_sender import SuperRetryingSender
+from flask import abort, jsonify, current_app as app
+from tekore import Spotify, RetryingSender, SyncSender, RefreshingCredentials
 
 import httpx
 
 def init_spotipy():
-    spotify_client_id = app.config['SPOTIFY_CLIENT_ID']
-    spotify_client_secret = app.config['SPOTIFY_CLIENT_SECRET']
+    client_id = app.config['SPOTIFY_CLIENT_ID']
+    client_secret = app.config['SPOTIFY_CLIENT_SECRET']
 
-    app_token = None
-    retry_count = 0
-    retry_limit = 10
-    delay_seconds = 1
+    token, sender = get_retrying_token_and_sender(client_id, client_secret)
 
-    while app_token is None and retry_count < retry_limit:
-        try:
-            app_token = request_client_token(spotify_client_id, spotify_client_secret)
-        except:
-            e = sys.exc_info()[0]
-            app.logger.info('Caught exception {}, retry_count = {}, retry_limit = {}'.format(e, retry_count, retry_limit))
-            if retry_count >= retry_limit:
-                app.logger.error('Failed to get app token after retrying {} times. Reraising exception.'.format(retry_count))
-                raise
-            app_token = None
-            retry_count += 1
-            time.sleep(delay_seconds)
-            delay_seconds *= 2
+    return Spotify(token, sender=sender)
+
+def get_retrying_token_and_sender(client_id, client_secret):
+    # Use transport that retries on httpx exception such as `httpx.ConnectError: [Errno 101] Network is unreachable`
+    retrying_transport = httpx.HTTPTransport(retries=10)
 
     # increase the timeout to prevent spotify timeouts
-    big_timeout_client = httpx.Client(timeout=60.0)
-    big_timeout_sender = SyncSender(big_timeout_client)
+    big_timeout_client = httpx.Client(timeout=60.0, transport=retrying_transport)
+    big_timeout_sender = SyncSender(client=big_timeout_client)
 
     # use RetryingSender to retry when we are rate limited by spotify API
-    sender = SuperRetryingSender(retries=20, sender=big_timeout_sender)
-    return Spotify(app_token, sender=sender)
+    sender = RetryingSender(retries=10, sender=big_timeout_sender)
+
+    credentials = RefreshingCredentials(client_id, client_secret, sender=sender)
+    token = credentials.request_client_token()
+
+    return token, sender
 
 def get_by_id(model_cls, lookup_id, schema):
     model_obj = model_cls.query.get(lookup_id)
