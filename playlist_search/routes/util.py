@@ -1,11 +1,7 @@
-import json
-import sys
-import time
-
-from flask import abort, jsonify, current_app as app
-from tekore import Spotify, RetryingSender, SyncSender, RefreshingCredentials
-
+from flask import abort, current_app as app
+from tekore import Spotify, SyncSender, RetryingSender, RefreshingCredentials
 import httpx
+
 
 def init_spotipy():
     client_id = app.config['SPOTIFY_CLIENT_ID']
@@ -15,21 +11,23 @@ def init_spotipy():
 
     return Spotify(token, sender=sender)
 
-def get_retrying_token_and_sender(client_id, client_secret):
-    # Use transport that retries on httpx exception such as `httpx.ConnectError: [Errno 101] Network is unreachable`
-    retrying_transport = httpx.HTTPTransport(retries=10)
 
-    # increase the timeout to prevent spotify timeouts
-    big_timeout_client = httpx.Client(timeout=60.0, transport=retrying_transport)
-    big_timeout_sender = SyncSender(client=big_timeout_client)
+def get_retrying_token_and_sender(client_id, secret):
+    # Use transport that retries on httpx exception such as
+    # `httpx.ConnectError: [Errno 101] Network is unreachable`
+    transport = httpx.HTTPTransport(retries=10)
 
-    # use RetryingSender to retry when we are rate limited by spotify API
-    sender = RetryingSender(retries=10, sender=big_timeout_sender)
+    # increase the timeout to prevent Spotify timeouts
+    client = httpx.Client(timeout=60.0, transport=transport)
 
-    credentials = RefreshingCredentials(client_id, client_secret, sender=sender)
+    # use RetryingSender to retry when we are rate limited by Spotify API
+    sender = RetryingSender(retries=10, sender=SyncSender(client=client))
+
+    credentials = RefreshingCredentials(client_id, secret, sender=sender)
     token = credentials.request_client_token()
 
     return token, sender
+
 
 def get_by_id(model_cls, lookup_id, schema):
     model_obj = model_cls.query.get(lookup_id)
@@ -39,12 +37,14 @@ def get_by_id(model_cls, lookup_id, schema):
 
     return result
 
+
 def lookup_track(track_spotify_id, fields=None):
     spotify = init_spotipy()
     track = spotify.track(track_spotify_id)
     if fields is not None:
         track = filter_track_by_fields(track, fields)
     return track
+
 
 def lookup_tracks(track_spotify_ids, fields=None):
     spotify = init_spotipy()
@@ -62,6 +62,7 @@ def lookup_tracks(track_spotify_ids, fields=None):
 
     return {'tracks': tracks}
 
+
 def lookup_playlists(playlist_spotify_ids, fields=None):
     spotify = init_spotipy()
 
@@ -76,6 +77,7 @@ def lookup_playlists(playlist_spotify_ids, fields=None):
 
     return {'playlists': playlists}
 
+
 def lookup_playlist(playlist_spotify_id, fields=None):
     spotify = init_spotipy()
 
@@ -87,6 +89,7 @@ def lookup_playlist(playlist_spotify_id, fields=None):
     # see https://github.com/felix-hilden/tekore/issues/142 for details
     api_playlist = spotify.playlist(playlist_spotify_id, fields=str_fields)
     return api_playlist
+
 
 def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
     api_tracks = lookup_tracks_from_playlist(playlist_spotify_id, ['items.track.id', 'items.added_at'])
@@ -101,6 +104,7 @@ def get_track_in_playlist_details(track_spotify_id, playlist_spotify_id):
             break
 
     return {'track_rank': rank, 'added_at': added_at}
+
 
 def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
     if fields is not None:
@@ -127,10 +131,12 @@ def lookup_tracks_from_playlist(playlist_spotify_id, fields=None):
         for api_track in api_tracks['items']:
             yield api_track
 
+
 def filter_tracks_by_fields(tracks, fields):
     if fields is None:
         return tracks
     return [ filter_track_by_fields(track, fields) for track in tracks ]
+
 
 def filter_track_by_fields(track, fields):
     if fields is None:
