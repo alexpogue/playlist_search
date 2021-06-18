@@ -1,14 +1,7 @@
-from flask import Flask, current_app
-
+from flask import Flask
 import logging
 from logging.handlers import SysLogHandler
-
 from celery import Celery
-from celery.signals import task_postrun
-import config
-
-from .util import generate_config_file_from_heroku_env
-import os
 import sys
 import config
 
@@ -17,9 +10,6 @@ celery = Celery(
     backend=config.CELERY_RESULT_BACKEND,
     broker=config.CELERY_BROKER_URL
 )
-
-if 'RUNNING_ON_HEROKU' in os.environ and os.environ['RUNNING_ON_HEROKU'] == 'True':
-    generate_config_file_from_heroku_env()
 
 
 def init_celery(app):
@@ -54,7 +44,8 @@ def create_app():
 
     app.logger.setLevel(logging.INFO)
 
-    app.logger.info('db uri = {}'.format(app.config['SQLALCHEMY_DATABASE_URI']))
+    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    app.logger.info('db uri = {}'.format(db_uri))
 
     init_celery(app)
 
