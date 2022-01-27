@@ -10,16 +10,18 @@
  */
 
 function playlist_search_tool($atts) {
+	$imgDir = plugin_dir_url(__FILE__) . 'img';
     $Content = '<div class="spotify_url_form">
-                    Spotify song URL: <input type="text" id="spotify_url_textbox"></input>
+                    <span id="playlist_search_textbox_prompt">Spotify song URL:</span> <input type="text" id="spotify_url_textbox"></input>
                     <button class="do_search">Search Playlists</button>
+					<img id="playlist_search_loading_indicator" src="' . $imgDir . '/loading.gif" />
                 </div>
-                <div>
+                <div id="results">
                     <span id="error_label"></span><br /><br />
-                    Name: <span id="song_name"></span><br />
-                    Artist: <span id="song_artists"></span><br />
-                    Album: <span id="song_album"></span><br /><br />
-                    Playlists:<br />
+                    <span class="playlist_search_field_title">Name:</span> <span id="song_name"></span><br />
+                    <span class="playlist_search_field_title">Artist:</span> <span id="song_artists"></span><br />
+                    <span class="playlist_search_field_title">Album:</span> <span id="song_album"></span><br /><br />
+                    <span class="playlist_search_field_title">Playlists:</span><br />
                     <ul id="playlist_list">
                     </ul>
                     <span id="playlist_csv_link"></span>
@@ -36,6 +38,10 @@ function scripts() {
     wp_localize_script('playlist-search-tool', 'settings', array(
         'ajaxurl' => admin_url('admin-ajax.php')
     ));
+
+	wp_localize_script('playlist_search_tool', 'wordpress_vars', array(
+		'plugin_path' => plugin_dir_url(__FILE__)
+	));
 
 }
 

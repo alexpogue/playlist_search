@@ -29,3 +29,16 @@
 #update_db_status_details_block {
     display: none;
 }
+
+.playlist_search_field_title, #playlist_search_textbox_prompt {
+    font-weight: bold;
+}
+
+#results {
+    display: none;
+}
+
+#playlist_search_loading_indicator {
+    width: 50px;
+    height: 50px;
+}

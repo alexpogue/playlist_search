@@ -13,6 +13,8 @@
         $( '.toggle_debug_link_container a' ).click(function() {
             toggleDebugBlock();
         });
+        $( '#playlist_search_loading_indicator' ).show();
+        $( '#playlist_search_loading_indicator' ).hide();
     } );
     function removeTrailingCharIfExists(url, theChar) {
         var lastSlash = url.lastIndexOf(theChar);
@@ -68,6 +70,7 @@
     }
 
     function submitPlaylistSearch() {
+        $( '#playlist_search_loading_indicator' ).show();
         var spotifyQuery = $("#spotify_url_textbox").val();
         var queryType = getSpotifyQueryType(spotifyQuery);
         console.log("type = " + queryType);
@@ -105,6 +108,9 @@
                 console.log('ok');
                 console.log('response = ' + JSON.stringify(response));
                 track = JSON.parse(response.data);
+
+                $( '#playlist_search_loading_indicator' ).hide();
+                $( '#results' ).show();
 
                 $('#error_label').text('');
                 $('#playlist_list').text('');
